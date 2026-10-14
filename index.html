@@ -38,6 +38,13 @@
 <div id="auditLog" class="mono" style="font-size:10px;color:var(--m);margin-top:6px;background:#020617;padding:8px;border-radius:8px;max-height:120px;overflow:auto">Ready to scan... Click SCAN button.<br>Command: show onu optical-info / show gpon onu state</div>
 </div></div>
 <div class="auditorCard"><div class="kTitle">2. Power Meter Calculator</div><div style="display:grid;gap:8px;margin-top:8px">
+  </div></div>
+<div class="auditorCard" style="border:1px solid #00ff88">
+<div class="kTitle">📱 MOBILE ONLY - OLT WEB থেকে Paste</div>
+<div style="font-size:10px;color:#94a3b8;margin-top:4px">OLT IP 192.168.1.10 > ONU Optical Info Copy > Paste</div>
+<textarea id="pasteOltData" class="iSm" style="height:80px;margin-top:6px" placeholder="ONU 0/1/0:1 SN:VSEC123 RX:-22.4 TX:3.2&#10;ONU 0/1/0:2 SN:BDCM543 RX:-28.1 TX:2.9"></textarea>
+<button class="btn" style="margin-top:6px" onclick="parsePastedData()">📊 PARSE & AUDIT (Mobile)</button>
+</div>
 <div style="display:flex;gap:6px"><input id="calcTx" class="iSm" placeholder="OLT TX e.g. 3.5 dBm" value="3.5"><input id="calcRx" class="iSm" placeholder="ONU RX e.g. -22.4" value="-22.4"></div>
 <button class="navBtn" style="width:100%" onclick="calcLoss()">📏 CALCULATE FIBER LOSS</button>
 <div id="calcResult" class="mono" style="background:#020617;padding:10px;border-radius:8px;font-size:12px">Loss = TX - RX<br>= 3.5 - (-22.4) = 25.9 dB<br>Status: <span class="badge bg">GOOD</span></div>
