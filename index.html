@@ -1,28 +1,38 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FUTURE NETWORK NOC v5.4 NO LOGIN</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<link rel="stylesheet" href="style.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Future Network NOC v4.2 Real</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="app">
-<div class="topbar"><div>FUTURE <span style="color:#00ff88">NETWORK</span> v5.4 DIRECT</div><div style="display:flex;gap:8px"><span id="oltStatus" class="badge bg">OLT:READY</span><span id="mtStatus" class="badge bg">MT:READY</span><button class="navBtn" onclick="location.reload()">REFRESH</button></div></div>
-<div class="nav"><button class="navBtn active" onclick="tab('dash',this)">DASHBOARD</button><button class="navBtn" onclick="tab('clients',this)">CLIENTS</button><button class="navBtn" onclick="tab('olt',this)">OLT</button><button class="navBtn" onclick="tab('pon',this)">PON</button><button class="navBtn" onclick="tab('mt',this)">MIKROTIK</button><button class="navBtn" onclick="tab('map',this)">MAP</button><button class="navBtn" onclick="tab('connect',this)">CONNECT</button></div>
-<div class="main">
-<div id="t-dash" class="grid"><div class="grid g4"><div class="card"><div class="kTitle">TOTAL CLIENTS</div><div class="kVal" id="kpiClients">0</div></div><div class="card"><div class="kTitle">ONLINE</div><div class="kVal" id="kpiOnline" style="color:#00ff88">0</div></div><div class="card"><div class="kTitle">PON ALERT</div><div class="kVal" id="kpiPower" style="color:#ffcc00">0</div></div><div class="card"><div class="kTitle">DUE</div><div class="kVal" id="kpiBill">0</div></div></div><div class="card"><div class="kTitle">SYSTEM LOG - NO LOGIN NEEDED</div><div id="sysLog" style="color:#00ff88">✓ v5.4 Direct Entry - No Password Bug - Ready</div></div></div>
-<div id="t-clients" class="grid hidden"><div class="card"><div style="display:flex;justify-content:space-between"><div class="kTitle">CLIENTS - PERMANENT DB</div><button class="navBtn" onclick="openAddClient()">+ ADD CLIENT</button></div><div style="display:flex;gap:6px;margin-top:8px"><input id="searchClient" class="iSm" placeholder="Search" oninput="renderClients()"></div><div class="tableWrap" style="margin-top:10px"><table><thead><tr><th>NAME</th><th>PPPoE</th><th>OLT/PON</th><th>ONU</th><th>RX</th><th>PKG</th><th>DUE</th><th>STATUS</th><th>EDIT</th></tr></thead><tbody id="clientTable"></tbody></table></div></div></div>
-<div id="t-olt" class="grid hidden"><div class="card"><div class="kTitle">OLT LIST</div><div style="display:flex;gap:6px"><input id="oltName" class="iSm" placeholder="OLT Name"><input id="oltIp" class="iSm" placeholder="IP"><button class="navBtn" onclick="addOLT()">ADD</button></div><div class="tableWrap" style="margin-top:10px"><table><thead><tr><th>OLT</th><th>IP</th><th>MODEL</th><th>ACTION</th></tr></thead><tbody id="oltTable"></tbody></table></div></div></div>
-<div id="t-pon" class="grid hidden"><div class="card"><div class="kTitle">PON A-Z</div><div class="tableWrap"><table><thead><tr><th>OLT</th><th>PON</th><th>TX</th><th>CLIENTS</th><th>STATUS</th></tr></thead><tbody id="ponTable"></tbody></table></div></div></div>
-<div id="t-mt" class="grid hidden"><div class="card"><div class="kTitle">MIKROTIK LIVE</div><div class="tableWrap"><table><thead><tr><th>USER</th><th>IP</th><th>PKG</th><th>OPTICAL</th><th>STATUS</th></tr></thead><tbody id="mtLiveTable"></tbody></table></div></div></div>
-<div id="t-map" class="grid hidden"><div class="card"><div class="kTitle">MAP</div><div id="map"></div></div></div>
-<div id="t-connect" class="grid hidden"><div class="card"><div class="kTitle">CONNECT</div><p style="font-size:11px;color:#94a3b8;margin-top:8px">OLT & MikroTik will be connected via API - Simulated SAFE Mode. No real credentials needed now.</p><button class="navBtn" style="margin-top:10px" onclick="saveOLTConnect()">TEST OLT CONNECTION</button><button class="navBtn" style="margin-top:6px" onclick="saveMTConnect()">TEST MT CONNECTION</button><div id="cOltLog"></div><div id="cMtLog"></div></div></div>
+<div class="app">
+<div class="top"><div><b>FUTURE NETWORK</b><br><span>ENTERPRISE NOC v4.2 REAL - CUMILLA</span></div><button id="setBtn">Settings & Activate</button></div>
+<div class="tabs"><button class="active" data-t="d">Dashboard</button><button data-t="c">Customers</button><button data-t="b">Billing</button><button data-t="g">Live Fiber Map</button></div>
+
+<div id="p-d" class="page active">
+<div class="kpis"><div class="kpi"><h2 id="kSub">0</h2><p>Total Customer</p></div><div class="kpi"><h2 id="kBill">৳0</h2><p>Collection</p></div></div>
+<div class="card"><h3>Live Bandwidth 10G <span class="live">LIVE</span></h3><canvas id="bw" height="130"></canvas></div>
+<div class="card"><h3>ONU RX Power</h3><canvas id="rx" height="130"></canvas></div>
+<div class="card"><p id="actS">Status: Local Mode - Settings এ Real IP দিলে Live হবে</p><button class="btn btn-c" style="margin-top:6px" onclick="clearData()">Reset Data</button></div>
 </div>
+
+<div id="p-c" class="page"><div class="card"><div class="row"><h3>PPPoE Customers - Real</h3><button class="btn btn-o" onclick="openAdd()">+ Add Customer</button></div><input id="sBox" placeholder="Search Name / IP" oninput="render()"><table id="subT"><thead><tr><th>ID</th><th>Name</th><th>Pkg</th><th>IP</th><th>RX</th><th>Del</th></tr></thead><tbody></tbody></table></div></div>
+<div id="p-b" class="page"><div class="card"><h3>Billing Ledger</h3><table id="billT"><thead><tr><th>Inv</th><th>Name</th><th>Amt</th><th>Status</th></tr></thead><tbody></tbody></table></div></div>
+
+<div id="p-g" class="page"><div class="card"><h3>Live Fiber - OLT to Home (Real OLT API)</h3><p class="small">Green=Good (-24), Orange=Warning (-27), Red=Cut LOS (-40) Blink - Real OLT থেকে আসবে</p><canvas id="fiberMap" width="400" height="520"></canvas><div class="fiber-info"><b id="tgI">TG Select করো</b> | <b id="tgP">-</b></div><div id="alarm" class="alarm">🚨 No Alarm - Real Data Wait</div><p id="fiberTime" class="small">Last Update: -</p></div></div>
 </div>
-<div id="clientModal" style="display:none"><div class="card" style="width:95%;max-width:500px;margin:5% auto"><div style="display:flex;justify-content:space-between"><div class="kTitle">ADD / EDIT CLIENT</div><button class="navBtn" onclick="closeAddClient()">X</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px"><input id="f_name" class="iSm" placeholder="Name *"><input id="f_pppoe" class="iSm" placeholder="PPPoE *"><input id="f_olt" class="iSm" placeholder="OLT"><input id="f_pon" class="iSm" placeholder="PON 0/1/2"><input id="f_onuSn" class="iSm" placeholder="ONU SN"><input id="f_optical" class="iSm" placeholder="RX -22.5"><input id="f_package" class="iSm" placeholder="Package 20 Mbps"><input id="f_due" class="iSm" placeholder="Due 0"></div><button class="btn" style="margin-top:10px" onclick="saveClient()">SAVE</button></div></div>
-<script src="app.js"></script>
+
+<div id="setM" class="modal"><div class="box"><h3>Real Activation - MikroTik + OLT</h3>
+<label>MikroTik Host IP *</label><input id="mt_h" placeholder="192.168.88.1"><label>User *</label><input id="mt_u" placeholder="admin"><label>Password *</label><input id="mt_p" type="password"><label>Port</label><input id="mt_port" value="8728">
+<label>OLT Host IP *</label><input id="olt_h" placeholder="192.168.10.100"><label>OLT User *</label><input id="olt_u" placeholder="e.g admin"><label>OLT Pass *</label><input id="olt_p" type="password"><label>OLT Type</label><select id="olt_t"><option value="bdcom">BDCOM EPON</option><option value="vsol">V-SOL GPON</option><option value="huawei">Huawei</option></select>
+<label>Backend API URL *</label><input id="api_u" placeholder="http://192.168.0.105:8000/api">
+<div class="row"><button class="btn btn-c" onclick="closeSet()">Cancel</button><button class="btn btn-o" onclick="saveSet()">Save & Activate Real</button></div><p id="setSt" class="small"></p></div></div>
+
+<div id="addM" class="modal"><div class="box"><h3>Add Customer - Real MikroTik</h3>
+<label>ID</label><input id="f_id" value="FN-1003"><label>Name</label><input id="f_name" placeholder="Balay"><label>Phone = PPPoE Pass</label><input id="f_phone" placeholder="017XX"><label>Package = MikroTik Profile</label><select id="f_pkg"><option>10Mbps</option><option>20Mbps</option><option>30Mbps</option></select><label>PPPoE IP</label><input id="f_ip" value="10.10.12.103"><label>ONU Serial</label><input id="f_onu" value="HWTC-"><label>GPS for Map</label><input id="f_gps" placeholder="23.4585,91.1720">
+<div class="row"><button class="btn btn-c" onclick="closeAdd()">Cancel</button><button class="btn btn-o" onclick="saveCust()">Provision Real</button></div></div></div>
+
+<script src="script.js"></script>
 </body>
 </html>
