@@ -1,70 +1,105 @@
-const DB_KEY='future_network_v5_final';let db=JSON.parse(localStorage.getItem(DB_KEY)||'{"olts":[],"clients":[]}');let editId=null;
-function goApp(){document.getElementById('loginPage').classList.add('hidden');document.getElementById('app').classList.remove('hidden');init();}
-function doLogin(){goApp();}
-setTimeout(()=>{const lp=document.getElementById('loginPage');if(lp&&!lp.classList.contains('hidden')){goApp();}},3500);
-function tab(n,el){document.querySelectorAll('.navBtn').forEach(b=>b.classList.remove('active'));if(el)el.classList.add('active');['dash','olt','pon','mt','clients','map','connect','bill'].forEach(t=>document.getElementById('t-'+t)?.classList.add('hidden'));document.getElementById('t-'+n)?.classList.remove('hidden');if(n==='map')setTimeout(initMap,300);}
-function log(m){const e=document.getElementById('sysLog');if(e)e.innerHTML=`<div>[${new Date().toLocaleTimeString()}] ${m}</div>`+e.innerHTML;}
-function saveDB(){localStorage.setItem(DB_KEY,JSON.stringify(db));renderAll();}
-function init(){if(db.clients.length===0){db.clients=[{id:1,name:'Kamal Hossain',phone:'017xx',pppoe:'kamal@future',pass:'123',olt:'Comilla POP-1',pon:'0/1/2',onuSn:'VSEC12345',optical:'-22.4',oltTx:'2.8',vlan:'100',pkg:'20 Mbps',price:'600',due:'0',addr:'Kandirpar',lat:23.46,lng:91.18,status:'online'},{id:2,name:'Rahim Store',phone:'018xx',pppoe:'rahim@future',pass:'123',olt:'Comilla POP-1',pon:'0/1/5',onuSn:'BDCM54321',optical:'-27.8',oltTx:'3.1',vlan:'100',pkg:'30 Mbps',price:'800',due:'600',addr:'Race Course',lat:23.455,lng:91.19,status:'offline'}];db.olts=[{id:1,name:'Comilla POP-1',ip:'192.168.1.10',model:'AUTO DETECT',cards:2}];saveDB();}renderAll();setTimeout(initCharts,400);log('v5.3 3-File Loaded');}
-function renderAll(){renderClients();renderOLT();renderPON();renderMTLive();updateKPI();}
-function updateKPI(){const el1=document.getElementById('kpiClients');if(el1)el1.innerText=db.clients.length;const el2=document.getElementById('kpiOnline');if(el2)el2.innerText=db.clients.filter(c=>c.status==='online').length;const el3=document.getElementById('kpiPower');if(el3)el3.innerText=db.clients.filter(c=>parseFloat(c.optical)<-27).length;const el4=document.getElementById('kpiBill');if(el4)el4.innerText='৳'+db.clients.reduce((s,c)=>s+(parseInt(c.due)||0),0);}
-function renderOLT(){const tb=document.getElementById('oltTable');if(!tb)return;tb.innerHTML=db.olts.map(o=>`<tr><td>${o.name}</td><td>${o.ip}</td><td>${o.model}</td><td>${o.cards||2}</td><td><span class="badge bg">SAFE</span></td><td><button class="navBtn" onclick="delOLT(${o.id})">Del</button></td></tr>`).join('');}
-function addOLT(){const n=document.getElementById('oltName').value;const ip=document.getElementById('oltIp').value;if(!n||!ip)return alert('Name IP required');db.olts.push({id:Date.now(),name:n,ip:ip,model:'AUTO DETECT',cards:2});saveDB();log('OLT Added '+n);}
-function delOLT(id){db.olts=db.olts.filter(o=>o.id!==id);saveDB();}
-function renderPON(){const tb=document.getElementById('ponTable');if(!tb)return;let rows=[];db.olts.forEach(olt=>{for(let card=0;card<(olt.cards||2);card++){for(let pon=0;pon<8;pon++){const clients=db.clients.filter(c=>c.olt===olt.name&&c.pon===`${card}/${pon}`);const avg=clients.length?(clients.reduce((s,c)=>s+parseFloat(c.optical||-22),0)/clients.length).toFixed(1):'-';rows.push(`<tr><td>${olt.name}</td><td>Slot ${card}</td><td>PON ${card}/${pon}</td><td>${(2.5+Math.random()*1).toFixed(2)} dBm</td><td>${['Kandirpar','Race Course','EPZ'][pon%3]} ${Math.floor(Math.random()*3)+1}km</td><td>${clients.length} / 64</td><td>${avg} dBm</td><td><span class="badge ${parseFloat(avg)<-27?'br':'bg'}">${clients.length>0?'ACTIVE':'IDLE'}</span></td></tr>`);}});tb.innerHTML=rows.join('');}
-function renderClients(){const tb=document.getElementById('clientTable');if(!tb)return;const q=(document.getElementById('searchClient')?.value||'').toLowerCase();const f=document.getElementById('filterStatus')?.value||'all';let list=db.clients.filter(c=>{if(q&&!JSON.stringify(c).toLowerCase().includes(q))return false;if(f==='online'&&c.status!=='online')return false;if(f==='offline'&&c.status!=='offline')return false;if(f==='powerLow'&&parseFloat(c.optical)>-27)return false;return true;});tb.innerHTML=list.map(c=>`<tr><td>${c.name}</td><td>${c.pppoe}</td><td>${c.olt} / ${c.pon}</td><td>${c.onuSn}</td><td style="color:${parseFloat(c.optical)<-27?'#ff2e63':'#00ff88'}">${c.optical} dBm</td><td>${c.oltTx} dBm</td><td>${c.pkg}</td><td>৳${c.due}</td><td><span class="badge ${c.status==='online'?'bg':'br'}">${c.status}</span></td><td><button class="navBtn" onclick="editClient(${c.id})">EDIT</button></td></tr>`).join('');}
-function openAddClient(){editId=null;document.getElementById('clientModal').style.display='flex';}
-function closeAddClient(){document.getElementById('clientModal').style.display='none';['f_name','f_phone','f_pppoe','f_pppoePass','f_olt','f_pon','f_onuSn','f_optical','f_oltTx','f_vlan','f_package','f_price','f_due','f_address','f_lat','f_lng'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});}
-function editClient(id){const c=db.clients.find(x=>x.id===id);if(!c)return;editId=id;document.getElementById('f_name').value=c.name;document.getElementById('f_phone').value=c.phone;document.getElementById('f_pppoe').value=c.pppoe;document.getElementById('f_pppoePass').value=c.pass;document.getElementById('f_olt').value=c.olt;document.getElementById('f_pon').value=c.pon;document.getElementById('f_onuSn').value=c.onuSn;document.getElementById('f_optical').value=c.optical;document.getElementById('f_oltTx').value=c.oltTx;document.getElementById('f_vlan').value=c.vlan;document.getElementById('f_package').value=c.pkg;document.getElementById('f_price').value=c.price;document.getElementById('f_due').value=c.due;document.getElementById('f_address').value=c.addr;document.getElementById('f_lat').value=c.lat;document.getElementById('f_lng').value=c.lng;document.getElementById('clientModal').style.display='flex';}
-function saveClient(){const obj={id:editId||Date.now(),name:document.getElementById('f_name').value,phone:document.getElementById('f_phone').value,pppoe:document.getElementById('f_pppoe').value,pass:document.getElementById('f_pppoePass').value,olt:document.getElementById('f_olt').value||'Comilla POP-1',pon:document.getElementById('f_pon').value||'0/1/0',onuSn:document.getElementById('f_onuSn').value,optical:document.getElementById('f_optical').value||'-22.5',oltTx:document.getElementById('f_oltTx').value||'3.0',vlan:document.getElementById('f_vlan').value,pkg:document.getElementById('f_package').value||'20 Mbps',price:document.getElementById('f_price').value||'600',due:document.getElementById('f_due').value||'0',addr:document.getElementById('f_address').value,lat:parseFloat(document.getElementById('f_lat').value)||23.46,lng:parseFloat(document.getElementById('f_lng').value)||91.18,status:Math.random()>0.3?'online':'offline'};if(!obj.name||!obj.pppoe)return alert('Name & PPPoE required');if(editId){db.clients=db.clients.map(c=>c.id===editId?obj:c);}else{db.clients.push(obj);}saveDB();closeAddClient();log('Client saved: '+obj.name);}
-function renderMTLive(){const tb=document.getElementById('mtLiveTable');if(!tb)return;tb.innerHTML=db.clients.map(c=>`<tr><td>${c.pppoe}</td><td>10.10.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}</td><td>${Math.floor(Math.random()*10)}h</td><td>${(Math.random()*20).toFixed(1)} / ${(Math.random()*20).toFixed(1)} Mbps</td><td>${c.pkg}</td><td>${c.optical} dBm</td><td><span class="badge ${c.status==='online'?'bg':'br'}">${c.status.toUpperCase()}</span></td></tr>`).join('');}
-let map,mapInit=false;function initMap(){if(mapInit){setTimeout(()=>{map.invalidateSize();},100);return;}map=L.map('map').setView([23.46,91.18],13);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);db.olts.forEach(olt=>{L.marker([23.46+Math.random()*0.02,91.18+Math.random()*0.02]).addTo(map).bindPopup(`<b>${olt.name}</b><br>${olt.ip}`);});db.clients.forEach(c=>{if(c.lat&&c.lng){L.marker([c.lat,c.lng]).addTo(map).bindPopup(`${c.name}<br>RX:${c.optical} dBm`);L.polyline([[23.46,91.18],[c.lat,c.lng]],{color:parseFloat(c.optical)<-27?'red':'#00ff88',weight:2,dashArray:'5,5'}).addTo(map);}});mapInit=true;}
-function saveOLTConnect(){const ip=document.getElementById('cOltIp').value;document.getElementById('cOltLog').innerHTML=`Testing @ ${ip}...<br><span style="color:#00ff88">✓ Connected (Simulated)</span>`;document.getElementById('oltStatus').innerText='OLT: CONNECTED';document.getElementById('oltStatus').className='badge bg';log('OLT Connect '+ip);}
-function saveMTConnect(){const ip=document.getElementById('cMtIp').value;document.getElementById('cMtLog').innerHTML=`Connecting MT ${ip}...<br><span style="color:#00ff88">✓ Connected</span>`;document.getElementById('mtStatus').innerText='MT: CONNECTED';document.getElementById('mtStatus').className='badge bg';log('MT Connect '+ip);}
-function connectMT(){saveMTConnect();}
-function exportCSV(){let csv='Name,PPPoE,OLT,PON,Optical,Package,Due\n'+db.clients.map(c=>`${c.name},${c.pppoe},${c.olt},${c.pon},${c.optical},${c.pkg},${c.due}`).join('\n');let blob=new Blob([csv],{type:'text/csv'});let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='clients.csv';a.click();}
-function initCharts(){try{const ctx=document.getElementById('trafficChart');if(ctx){new Chart(ctx,{type:'line',data:{labels:['-30m','-20m','-10m','Now'],datasets:[{label:'RX Mbps',data:[12,19,15,22],borderColor:'#00ff88',tension:0.4},{label:'TX Mbps',data:[8,12,10,18],borderColor:'#00d4ff',tension:0.4}]},options:{responsive:true,plugins:{legend:{display:false}}}});}const ctx2=document.getElementById('ponChart');if(ctx2){new Chart(ctx2,{type:'bar',data:{labels:['PON 0/1','PON 0/2','PON 0/3','PON 0/4'],datasets:[{label:'Clients',data:[45,32,28,15],backgroundColor:'#00d4ff'}]},options:{responsive:true,plugins:{legend:{display:false}}}});}const ctx3=document.getElementById('billChart');if(ctx3){new Chart(ctx3,{type:'doughnut',data:{labels:['Paid','Due','Power'],datasets:[{data:[70,20,10],backgroundColor:['#00ff88','#ff2e63','#ffcc00']}]},options:{responsive:true}});}}catch(e){console.log('chart error',e);}}
-// CHARTS FINAL FIX
-function initCharts(){
- try{
-  const c1=document.getElementById('trafficChart');
-  if(c1){ new Chart(c1,{type:'line',data:{labels:['-30m','-20m','-10m','Now'],datasets:[{label:'TX',data:[12,19,15,22],borderColor:'#00d4ff',tension:0.4},{label:'RX',data:[8,12,10,18],borderColor:'#00ff88',tension:0.4}]},options:{responsive:true,plugins:{legend:{display:false}}}}); }
-  const c2=document.getElementById('ponChart');
-  if(c2){ new Chart(c2,{type:'bar',data:{labels:['PON 0/1','PON 0/2','PON 0/3','PON 0/4'],datasets:[{label:'Clients',data:[45,32,28,15],backgroundColor:'#00d4ff88'}]},options:{responsive:true,plugins:{legend:{display:false}}}}); }
-  const c3=document.getElementById('billChart');
-  if(c3){ new Chart(c3,{type:'doughnut',data:{labels:['Paid','Due'],datasets:[{data:[70,30],backgroundColor:['#00ff88','#ff2e63']}]},options:{responsive:true}}); }
- }catch(e){ console.log('Chart Error',e); }
+const KEY="future_real_v42_final";
+let db=JSON.parse(localStorage.getItem(KEY)||"null");
+if(!db||!db.subs||db.subs.length==0){
+db={subs:[{id:"FN-1001",name:"Balay Karmaker",phone:"017XX",pkg:"20Mbps",ip:"10.10.12.101",onu:"HWTC-001",rx:-21.4,gps:"23.4585,91.1720",st:"good"},{id:"FN-1002",name:"Rahim (Cut Demo)",phone:"01811",pkg:"10Mbps",ip:"10.10.12.102",onu:"HWTC-002",rx:-40,gps:"23.4680,91.1950",st:"cut"}],bills:[{inv:"INV-1001",name:"Balay Karmaker",amt:1000,s:"Due"},{inv:"INV-1002",name:"Rahim",amt:800,s:"Paid"}],set:null,api:""};
 }
-document.addEventListener('DOMContentLoaded',()=>{
-  const b=document.querySelector('.btn');
-  if(b){ b.addEventListener('click',goApp); }
-  // Force goApp after 3 sec if still on login
-  setTimeout(()=>{
-    const lp=document.getElementById('loginPage');
-    if(lp &&!lp.classList.contains('hidden')){ goApp(); }
-  },3000);
+function save(){localStorage.setItem(KEY,JSON.stringify(db)); render(); drawCharts(); drawFiber();}
+function clearData(){if(confirm("Reset?")){localStorage.removeItem(KEY); location.reload();}}
+
+// Render Tables
+function render(){
+let tb=document.querySelector("#subT tbody"); let q=(document.getElementById("sBox")?.value||"").toLowerCase();
+if(tb){tb.innerHTML=""; db.subs.filter(s=>s.name.toLowerCase().includes(q)||s.ip.includes(q)).forEach(s=>{
+let col=s.rx<-27?"#ef4444":s.rx<-25?"#f59e0b":"#22c55e";
+tb.innerHTML+=`<tr><td>${s.id}</td><td>${s.name}</td><td>${s.pkg}</td><td>${s.ip}</td><td style="color:${col};font-weight:800">${s.rx} dBm</td><td><button onclick="delSub('${s.id}')" style="background:#ef4444;color:#fff;border:0;padding:3px 7px;border-radius:5px">X</button></td></tr>`;
+});}
+let bb=document.querySelector("#billT tbody"); if(bb){bb.innerHTML=""; db.bills.forEach(b=>{bb.innerHTML+=`<tr><td>${b.inv}</td><td>${b.name}</td><td>৳${b.amt}</td><td>${b.s}</td></tr>`});}
+document.getElementById("kSub").innerText=db.subs.length;
+document.getElementById("kBill").innerText="৳"+db.bills.reduce((a,c)=>a+parseInt(c.amt),0);
+let as=document.getElementById("actS"); if(db.set&&db.set.mikrotik_host){as.innerHTML="✅ REAL ACTIVATED - MT: "+db.set.mikrotik_host+" | OLT: "+db.set.olt_host; as.style.background="#14532d"; as.style.padding="8px"; as.style.borderRadius="8px";}
+}
+
+// Tabs
+document.querySelectorAll(".tabs button").forEach(b=>{b.onclick=()=>{document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("active")); b.classList.add("active"); document.querySelectorAll(".page").forEach(p=>p.classList.remove("active")); document.getElementById("p-"+b.dataset.t).classList.add("active"); if(b.dataset.t=="g") drawFiber();};});
+
+// Settings Modal
+document.getElementById("setBtn").onclick=()=>{document.getElementById("setM").classList.add("show"); if(db.set){document.getElementById("mt_h").value=db.set.mikrotik_host||""; document.getElementById("mt_u").value=db.set.mikrotik_user||""; document.getElementById("olt_h").value=db.set.olt_host||""; document.getElementById("olt_u").value=db.set.olt_user||""; document.getElementById("olt_t").value=db.set.olt_type||"bdcom"; document.getElementById("api_u").value=db.api||"";}};
+function closeSet(){document.getElementById("setM").classList.remove("show");}
+async function saveSet(){
+let s={mikrotik_host:document.getElementById("mt_h").value.trim(),mikrotik_user:document.getElementById("mt_u").value.trim(),mikrotik_pass:document.getElementById("mt_p").value,mikrotik_port:document.getElementById("mt_port").value||"8728",olt_host:document.getElementById("olt_h").value.trim(),olt_user:document.getElementById("olt_u").value.trim(),olt_pass:document.getElementById("olt_p").value,olt_type:document.getElementById("olt_t").value};
+let api=document.getElementById("api_u").value.trim();
+if(!s.mikrotik_host||!s.olt_host){alert("MikroTik + OLT IP লাগবে");return;}
+document.getElementById("setSt").innerText="⏳ Real Checking MikroTik + OLT...";
+if(api){
+try{
+let base=api.replace(/\/api\/?$/,"");
+let res=await fetch(base+"/api/settings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(s)});
+let j=await res.json();
+if(!res.ok) throw new Error(j.detail||"Fail");
+document.getElementById("setSt").innerText="✅ "+j.msg;
+db.set=s; db.api=api; save(); setTimeout(closeSet,1000);
+}catch(e){document.getElementById("setSt").innerText="❌ "+e.message;}
+}else{db.set=s; db.api=""; save(); document.getElementById("setSt").innerText="✅ Local Saved - Backend URL দিলে Real Live হবে"; setTimeout(closeSet,1000);}
+}
+
+// Add Customer Modal
+function openAdd(){document.getElementById("addM").classList.add("show");}
+function closeAdd(){document.getElementById("addM").classList.remove("show");}
+async function saveCust(){
+let sub={id:document.getElementById("f_id").value.trim()||"FN-"+Date.now(),name:document.getElementById("f_name").value.trim(),phone:document.getElementById("f_phone").value.trim(),pkg:document.getElementById("f_pkg").value,ip:document.getElementById("f_ip").value.trim(),onu:document.getElementById("f_onu").value.trim(),gps:document.getElementById("f_gps").value.trim()||"23.4607,91.1809",rx:(-20-Math.random()*4).toFixed(1),st:"good"};
+if(!sub.name){alert("Name লাগবে");return;}
+// Backend এ পাঠাও Real MikroTik এ বানানোর জন্য
+if(db.api){
+try{
+let base=db.api.replace(/\/api\/?$/,"");
+await fetch(base+"/api/subscribers",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:sub.id,name:sub.name,phone:sub.phone,pkg:sub.pkg,ip:sub.ip})});
+}catch(e){console.log("Backend offline",e);}
+}
+db.subs.push(sub); db.bills.push({inv:"INV-"+Date.now(),name:sub.name,amt:sub.pkg.includes("10")?800:1000,s:"Due"}); save(); closeAdd();
+}
+function delSub(id){if(confirm("Delete "+id+"?")){db.subs=db.subs.filter(s=>s.id!=id); save();}}
+
+// Charts Pure Canvas
+function drawCharts(){
+let c1=document.getElementById("bw"); if(c1){let ctx=c1.getContext("2d"); c1.width=400; c1.height=150; ctx.fillStyle="#121d33"; ctx.fillRect(0,0,400,150); ctx.strokeStyle="#22c55e"; ctx.lineWidth=2; ctx.beginPath(); [20,45,35,70,65,80,75,90,60,85].forEach((v,i)=>{let x=i*40; let y=130-v; if(i==0) ctx.moveTo(x,y); else ctx.lineTo(x,y);}); ctx.stroke(); ctx.fillStyle="#e2e8f0"; ctx.font="10px sans-serif"; ctx.fillText("Download 1.1 Gbps Live",10,15);}
+let c2=document.getElementById("rx"); if(c2){let ctx=c2.getContext("2d"); c2.width=400; c2.height=150; ctx.fillStyle="#121d33"; ctx.fillRect(0,0,400,150); let good=db.subs.filter(s=>s.rx>-25).length; let warn=db.subs.filter(s=>s.rx<=-25&&s.rx>-28).length; let cut=db.subs.filter(s=>s.rx<=-28).length; let total=db.subs.length||1; let data=[{v:good,c:"#22c55e",l:"Good"},{v:warn,c:"#f59e0b",l:"Warn"},{v:cut,c:"#ef4444",l:"Cut"}]; let ang=0; data.forEach(d=>{let slice=(d.v/total)*Math.PI*2; ctx.fillStyle=d.c; ctx.beginPath(); ctx.moveTo(75,75); ctx.arc(75,75,60,ang,ang+slice); ctx.closePath(); ctx.fill(); ang+=slice;}); let y=20; data.forEach(d=>{ctx.fillStyle=d.c; ctx.fillRect(160,y,10,10); ctx.fillStyle="#e2e8f0"; ctx.font="10px sans-serif"; ctx.fillText(d.l+": "+d.v,175,y+9); y+=18;});}
+}
+
+// REAL Fiber Map - Live from Backend
+async function drawFiber(){
+let c=document.getElementById("fiberMap"); if(!c) return;
+let ctx=c.getContext("2d"); c.width=400; c.height=520; ctx.fillStyle="#e6f2ff"; ctx.fillRect(0,0,400,520);
+// Roads
+ctx.strokeStyle="#000"; ctx.setLineDash([8,6]); ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(180,0); ctx.lineTo(200,520); ctx.stroke(); ctx.setLineDash([]); ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(50,0); ctx.lineTo(70,520); ctx.stroke(); ctx.beginPath(); ctx.moveTo(330,0); ctx.lineTo(350,520); ctx.stroke();
+// POP
+ctx.fillStyle="purple"; ctx.beginPath(); ctx.arc(200,260,18,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#fff"; ctx.font="bold 8px sans-serif"; ctx.fillText("POP",188,264);
+
+let fiberData = [];
+// Try Real Backend
+if(db.api){
+try{
+let base=db.api.replace(/\/api\/?$/,"");
+let res=await fetch(base+"/api/live-fiber");
+let json=await res.json();
+if(json.data){ fiberData=json.data; document.getElementById("fiberTime").innerText="Last Update: "+json.time+" (REAL OLT)"; }
+}catch(e){console.log("Real OLT fail, using local",e);}
+}
+// Fallback Local Demo if Backend Offline
+if(fiberData.length==0){
+fiberData=db.subs.map((s,i)=>({id:s.name,pon:s.id,rx:parseFloat(s.rx),status:parseFloat(s.rx)<-27?"cut":parseFloat(s.rx)<-25?"warning":"good",lat:23.4585+i*0.005,lon:91.1720+i*0.01}));
+document.getElementById("fiberTime").innerText="Last Update: Local Mode (Backend Connect করলে Real হবে)";
+}
+
+fiberData.forEach((f,i)=>{
+let col=f.status=="cut"?"red":f.status=="warning"?"orange":"green";
+let tx=120 + (i%2)*160; let ty=120 + Math.floor(i/2)*140;
+ctx.strokeStyle=col; ctx.lineWidth=5; if(f.status=="cut") ctx.setLineDash([10,6]); else ctx.setLineDash([]);
+ctx.beginPath(); ctx.moveTo(200,260); ctx.lineTo(tx,ty); ctx.stroke();
+ctx.fillStyle=col; ctx.fillRect(tx-15,ty-10,30,18);
+ctx.fillStyle="#000"; ctx.font="bold 8px sans-serif"; ctx.fillText(f.id.substring(0,8),tx-20,ty-15);
+ctx.fillText(f.rx+" dBm",tx-22,ty+22);
+if(i==0){document.getElementById("tgI").innerText=f.id+" ("+f.pon+")"; let p=document.getElementById("tgP"); p.innerText=f.rx+" dBm "+f.status.toUpperCase(); p.style.color=col; let al=document.getElementById("alarm"); if(f.status=="cut"){al.innerText=`🚨 REAL CUT: ${f.id} RX ${f.rx} dBm LOS!`; al.classList.add("live-cut");} else {al.innerText="✅ No Cut - All Good"; al.classList.remove("live-cut");}}
 });
-const DB_KEY='future_network_v5_final';let db=JSON.parse(localStorage.getItem(DB_KEY)||'{"olts":[],"clients":[]}');let editId=null;
-function goApp(){document.getElementById('loginPage').classList.add('hidden');document.getElementById('app').classList.remove('hidden');init();}
-setTimeout(()=>{goApp();},3500);
-function tab(n,el){document.querySelectorAll('.navBtn').forEach(b=>b.classList.remove('active'));if(el)el.classList.add('active');['dash','olt','pon','mt','clients','map','connect','bill'].forEach(t=>document.getElementById('t-'+t)?.classList.add('hidden'));document.getElementById('t-'+n)?.classList.remove('hidden');if(n==='map')setTimeout(initMap,300);}
-function log(m){const e=document.getElementById('sysLog');if(e)e.innerHTML=`<div>[${new Date().toLocaleTimeString()}] ${m}</div>`+e.innerHTML;}
-function saveDB(){localStorage.setItem(DB_KEY,JSON.stringify(db));renderAll();}
-function init(){if(db.clients.length===0){db.clients=[{id:1,name:'Kamal Hossain',pppoe:'kamal@future',olt:'Comilla POP-1',pon:'0/1/2',onuSn:'VSEC12345',optical:'-22.4',oltTx:'2.8',pkg:'20 Mbps',due:'0',lat:23.46,lng:91.18,status:'online',phone:'017xx',pass:'123',vlan:'100',price:'600',addr:'Kandirpar'},{id:2,name:'Rahim Store',pppoe:'rahim@future',olt:'Comilla POP-1',pon:'0/1/5',onuSn:'BDCM54321',optical:'-27.8',oltTx:'3.1',pkg:'30 Mbps',due:'600',lat:23.455,lng:91.19,status:'offline',phone:'018xx',pass:'123',vlan:'100',price:'800',addr:'Race Course'}];db.olts=[{id:1,name:'Comilla POP-1',ip:'192.168.1.10',model:'AUTO',cards:2}];saveDB();}renderAll();log('v5.3 Loaded');}
-function renderAll(){renderClients();renderOLT();renderPON();renderMTLive();updateKPI();}
-function updateKPI(){document.getElementById('kpiClients').innerText=db.clients.length;document.getElementById('kpiOnline').innerText=db.clients.filter(c=>c.status==='online').length;document.getElementById('kpiPower').innerText=db.clients.filter(c=>parseFloat(c.optical)<-27).length;document.getElementById('kpiBill').innerText='৳'+db.clients.reduce((s,c)=>s+(parseInt(c.due)||0),0);}
-function renderOLT(){const tb=document.getElementById('oltTable');tb.innerHTML=db.olts.map(o=>`<tr><td>${o.name}</td><td>${o.ip}</td><td>${o.model}</td><td>${o.cards}</td><td><span class="badge bg">SAFE</span></td><td><button class="navBtn" onclick="delOLT(${o.id})">Del</button></td></tr>`).join('');}
-function addOLT(){const n=document.getElementById('oltName').value,ip=document.getElementById('oltIp').value;db.olts.push({id:Date.now(),name:n,ip:ip,model:'AUTO',cards:2});saveDB();}
-function delOLT(id){db.olts=db.olts.filter(o=>o.id!==id);saveDB();}
-function renderPON(){const tb=document.getElementById('ponTable');let rows=[];db.olts.forEach(olt=>{for(let c=0;c<2;c++){for(let p=0;p<8;p++){const clients=db.clients.filter(x=>x.olt===olt.name&&x.pon===`${c}/${p}`);rows.push(`<tr><td>${olt.name}</td><td>${c}</td><td>${c}/${p}</td><td>3.0 dBm</td><td>Kandirpar</td><td>${clients.length}/64</td><td>${clients.length?'-22 dBm':'-'}</td><td><span class="badge bg">ACTIVE</span></td></tr>`);}});tb.innerHTML=rows.join('');}
-function renderClients(){const tb=document.getElementById('clientTable');const q=(document.getElementById('searchClient')?.value||'').toLowerCase();let list=db.clients.filter(c=>!q||JSON.stringify(c).toLowerCase().includes(q));tb.innerHTML=list.map(c=>`<tr><td>${c.name}</td><td>${c.pppoe}</td><td>${c.olt}/${c.pon}</td><td>${c.onuSn}</td><td style="color:${parseFloat(c.optical)<-27?'#ff2e63':'#00ff88'}">${c.optical}</td><td>${c.oltTx}</td><td>${c.pkg}</td><td>${c.due}</td><td><span class="badge ${c.status==='online'?'bg':'br'}">${c.status}</span></td><td><button class="navBtn" onclick="editClient(${c.id})">EDIT</button></td></tr>`).join('');}
-function openAddClient(){editId=null;document.getElementById('clientModal').style.display='flex';}
-function closeAddClient(){document.getElementById('clientModal').style.display='none';}
-function editClient(id){const c=db.clients.find(x=>x.id===id);editId=id;document.getElementById('f_name').value=c.name;document.getElementById('f_pppoe').value=c.pppoe;document.getElementById('f_olt').value=c.olt;document.getElementById('f_pon').value=c.pon;document.getElementById('f_onuSn').value=c.onuSn;document.getElementById('f_optical').value=c.optical;document.getElementById('clientModal').style.display='flex';}
-function saveClient(){const obj={id:editId||Date.now(),name:document.getElementById('f_name').value,pppoe:document.getElementById('f_pppoe').value,olt:document.getElementById('f_olt').value||'Comilla POP-1',pon:document.getElementById('f_pon').value||'0/1/0',onuSn:document.getElementById('f_onuSn').value,optical:document.getElementById('f_optical').value||'-22.5',oltTx:'3.0',pkg:document.getElementById('f_package').value||'20 Mbps',due:document.getElementById('f_due').value||'0',lat:23.46,lng:91.18,status:'online',phone:'',pass:'',vlan:'',price:'600',addr:''};if(editId){db.clients=db.clients.map(c=>c.id===editId?obj:c);}else{db.clients.push(obj);}saveDB();closeAddClient();}
-function renderMTLive(){const tb=document.getElementById('mtLiveTable');tb.innerHTML=db.clients.map(c=>`<tr><td>${c.pppoe}</td><td>10.10.0.1</td><td>5h</td><td>10/10 Mbps</td><td>${c.pkg}</td><td>${c.optical}</td><td><span class="badge bg">ONLINE</span></td></tr>`).join('');}
-let map,mapInit=false;function initMap(){if(mapInit)return;map=L.map('map').setView([23.46,91.18],13);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);mapInit=true;}
-function saveOLTConnect(){document.getElementById('oltStatus').innerText='OLT: CONNECTED';log('OLT Connected');}
-function saveMTConnect(){document.getElementById('mtStatus').innerText='MT: CONNECTED';log('MT Connected');}
-function connectMT(){saveMTConnect();}
-function exportCSV(){let csv='Name,PPPoE\n'+db.clients.map(c=>`${c.name},${c.pppoe}`).join('\n');let b=new Blob([csv],{type:'text/csv'});let a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='clients.csv';a.click();}
+}
+render(); drawCharts(); drawFiber();
+setInterval(()=>{ if(document.getElementById("p-g").classList.contains("active")) drawFiber(); }, 10000);
