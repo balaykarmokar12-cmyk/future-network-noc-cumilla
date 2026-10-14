@@ -38,6 +38,7 @@ let j=await res.json();
 if(!res.ok) throw new Error(j.detail||"Fail");
 document.getElementById("setSt").innerText="✅ "+j.msg;
 db.set=s; db.api=api; save(); setTimeout(closeSet,1000);
+  
 }catch(e){document.getElementById("setSt").innerText="❌ "+e.message;}
 }else{db.set=s; db.api=""; save(); document.getElementById("setSt").innerText="✅ Local Saved - Backend URL দিলে Real Live হবে"; setTimeout(closeSet,1000);}
 }
@@ -84,12 +85,12 @@ let json=await res.json();
 if(json.data){ fiberData=json.data; document.getElementById("fiberTime").innerText="Last Update: "+json.time+" (REAL OLT)"; }
 }catch(e){console.log("Real OLT fail, using local",e);}
 }
+ function parsePastedData(){const t=document.getElementById('pasteOltData').value;auditorData=[];t.split('\n').forEach((l,i)=>{const r=l.match(/RX[: ]*(-?\d+\.?\d*)/i);const s=l.match(/SN[: ]*(\w+)/i);if(r)auditorData.push({olt:'Comilla POP-1',pon:`0/1/${i}`,onuId:`ONU ${i+1}`,client:`Client ${i+1}`,sn:s?s[1]:`SN${i}`,oltTx:'3.0',onuRx:parseFloat(r[1]),onuTx:'2.0',dist:'1km',temp:'35°C',loss:'0'});});renderAuditor();alert(auditorData.length+' টা Power পাওয়া গেছে!');} 
 // Fallback Local Demo if Backend Offline
 if(fiberData.length==0){
 fiberData=db.subs.map((s,i)=>({id:s.name,pon:s.id,rx:parseFloat(s.rx),status:parseFloat(s.rx)<-27?"cut":parseFloat(s.rx)<-25?"warning":"good",lat:23.4585+i*0.005,lon:91.1720+i*0.01}));
 document.getElementById("fiberTime").innerText="Last Update: Local Mode (Backend Connect করলে Real হবে)";
 }
-
 fiberData.forEach((f,i)=>{
 let col=f.status=="cut"?"red":f.status=="warning"?"orange":"green";
 let tx=120 + (i%2)*160; let ty=120 + Math.floor(i/2)*140;
@@ -103,3 +104,20 @@ if(i==0){document.getElementById("tgI").innerText=f.id+" ("+f.pon+")"; let p=doc
 }
 render(); drawCharts(); drawFiber();
 setInterval(()=>{ if(document.getElementById("p-g").classList.contains("active")) drawFiber(); }, 10000);
+// MOBILE PASTE AUDITOR - NEW
+function parsePastedData(){
+  const txt=document.getElementById('pasteOltData')?.value || "";
+  if(!txt) return alert('OLT Data Paste করো');
+  auditorData=[];
+  txt.split('\n').forEach((line,i)=>{
+    const rx=line.match(/RX[: ]*(-?\d+\.?\d*)/i);
+    const sn=line.match(/SN[: ]*(\w+)/i);
+    if(rx) auditorData.push({olt:'Comilla POP-1',pon:`0/1/${i}`,onuId:`ONU ${i+1}`,client:`Client ${i+1}`,sn:sn?sn[1]:`SN${i}`,oltTx:'3.0',onuRx:parseFloat(rx[1]),onuTx:'2.0',dist:'1.2km',temp:'35°C',loss:'0'});
+  });
+  if(auditorData.length==0){
+    const vals=txt.match(/-?\d+\.?\d*/g);
+    if(vals) vals.forEach((v,i)=>auditorData.push({olt:'POP-1',pon:'0/1/0',onuId:`ONU ${i}`,client:`Client ${i}`,sn:`SN${i}`,oltTx:'3.0',onuRx:parseFloat(v),onuTx:'2.0',dist:'1km',temp:'35°C',loss:'0'}));
+  }
+  renderAuditor();
+  alert(`${auditorData.length} টা ONU Power পাওয়া গেছে!`);
+}
